@@ -2,14 +2,14 @@ package org.aaron.easycontent.mock;
 
 import android.net.Uri;
 import org.aaron.easycontent.database.DatabaseTable;
-import org.aaron.easycontent.provider.BaseContentProvider;
+import org.aaron.easycontent.provider.EasyContentProvider;
 
 /**
  * User: aprobus
  * Date: 2/17/13
  * Time: 12:36 PM
  */
-public class PersonProvider extends BaseContentProvider {
+public class PersonProvider extends EasyContentProvider {
 
    public static final String AUTHORITY = "org.aaron.easycontent";
    private static final String DATABASE_NAME = "mock.db";

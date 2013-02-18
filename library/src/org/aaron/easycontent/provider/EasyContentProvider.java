@@ -13,7 +13,7 @@ import org.aaron.easycontent.database.DatabaseTable;
  * Date: 2/16/13
  * Time: 12:28 PM
  */
-public abstract class BaseContentProvider extends ContentProvider {
+public abstract class EasyContentProvider extends ContentProvider {
 
    private static final String COLUMN_ID = "_id";
    private static final String SINGLE_ITEM_WHERE_CLAUSE = COLUMN_ID + " = ?";
@@ -26,7 +26,7 @@ public abstract class BaseContentProvider extends ContentProvider {
    private String mDatabaseName;
    private int mDatabaseVersion;
 
-   public BaseContentProvider(DatabaseTable[] tables, String authority, String databaseName, int dbVersion) {
+   public EasyContentProvider(DatabaseTable[] tables, String authority, String databaseName, int dbVersion) {
       mTables = tables;
       mAuthority = authority;
       mDatabaseName = databaseName;

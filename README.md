@@ -32,12 +32,12 @@ public class PeopleTable extends DatabaseTable {
 }
 ```
 
-You will also need a class to extend from BaseContentProvider. Also, remember to register your content provider in the
+You will also need a class to extend from EasyContentProvider. Also, remember to register your content provider in the
 manifest.
 
 ```java
 
-public class MyContentProvider extends BaseContentProvider {
+public class MyContentProvider extends EasyContentProvider {
     //Authority for your app, should be your default package
     public static final String AUTHORITY = "org.aaron.easycontent";
 
