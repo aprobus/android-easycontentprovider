@@ -7,10 +7,17 @@ package org.aaron.easycontent.mock;
  */
 public class Person {
 
-   public long id;
+   public Long id;
    public String firstName;
    public String lastName;
    public int age;
+
+   public Person(String firstName, String lastName, int age) {
+      id = null;
+      this.firstName = firstName;
+      this.lastName = lastName;
+      this.age = age;
+   }
 
    public Person() {
 

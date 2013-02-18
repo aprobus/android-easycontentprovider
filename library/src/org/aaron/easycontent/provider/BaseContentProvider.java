@@ -15,12 +15,15 @@ import org.aaron.easycontent.database.DatabaseTable;
  */
 public abstract class BaseContentProvider extends ContentProvider {
 
+   private static final String COLUMN_ID = "_id";
+   private static final String SINGLE_ITEM_WHERE_CLAUSE = COLUMN_ID + " = ?";
+
    private DatabaseTable[] mTables;
    private String mAuthority;
-   private String mDatabaseName;
-   private Uri mBaseUri;
    private UriMatcher mUriMatcher;
+
    private SQLiteOpenHelper mDatabaseHelper;
+   private String mDatabaseName;
    private int mDatabaseVersion;
 
    public BaseContentProvider(DatabaseTable[] tables, String authority, String databaseName, int dbVersion) {
@@ -28,7 +31,6 @@ public abstract class BaseContentProvider extends ContentProvider {
       mAuthority = authority;
       mDatabaseName = databaseName;
       mDatabaseVersion = dbVersion;
-      mBaseUri = Uri.parse("content://" + authority);
 
       setupUris();
    }
@@ -38,21 +40,32 @@ public abstract class BaseContentProvider extends ContentProvider {
 
       String authority = mAuthority;
 
-      for (int i = 0; i < mTables.length; i++) {
+      for (int i = 0; i < mTables.length; i += 1) {
          ContentProviderEndPoint endPoint = mTables[i].getClass().getAnnotation(ContentProviderEndPoint.class);
-         mUriMatcher.addURI(authority, endPoint.tableName(), i);
-         mUriMatcher.addURI(authority, endPoint.tableName() + "/#", i + 1);
+         mUriMatcher.addURI(authority, endPoint.tableName(), i * 2);
+         mUriMatcher.addURI(authority, endPoint.tableName() + "/#", i * 2 + 1);
       }
    }
 
-   private DatabaseTable getTableForUri(Uri uri) {
+   private int getMatcherInfo(Uri uri) {
       int matchResult = mUriMatcher.match(uri);
 
       if (matchResult < 0 || matchResult / 2 >= mTables.length) {
          throw new IllegalArgumentException("Invalid uri: " + uri);
       }
 
-      return mTables[matchResult / 2];
+      short tableIndex = (short)(matchResult / 2);
+
+      boolean isSingleItem = true;
+      if ((matchResult & 1) == 0) {
+         isSingleItem = false;
+      }
+
+      return MatcherInfo.fromValues(tableIndex, isSingleItem);
+   }
+
+   private DatabaseTable findDatabaseTableForMatcherInfo(int matcherInfo) {
+      return mTables[MatcherInfo.getTableIndex(matcherInfo)];
    }
 
    @Override
@@ -63,42 +76,46 @@ public abstract class BaseContentProvider extends ContentProvider {
 
    @Override
    public Cursor query(Uri uri, String[] projection, String selection, String[] selectionArgs, String sortOrder) {
-      DatabaseTable matchedTable = getTableForUri(uri);
+      int matcherInfo = getMatcherInfo(uri);
+      DatabaseTable matchedTable = findDatabaseTableForMatcherInfo(matcherInfo);
+      boolean isSingleItem = MatcherInfo.isSingleItem(matcherInfo);
+
       ContentProviderEndPoint tableMeta = matchedTable.getClass().getAnnotation(ContentProviderEndPoint.class);
-
-      int matchResult = mUriMatcher.match(uri);
-      boolean isDirectory = (matchResult & 1) == 0;
-
       SQLiteDatabase readableDb = mDatabaseHelper.getReadableDatabase();
 
-      if (isDirectory) {
-         return readableDb.query(tableMeta.tableName(), projection, selection, selectionArgs, null, null, sortOrder);
-      } else {
+      if (isSingleItem) {
+         Log.i("LOL", "Single item uri: " + uri.toString());
          long rowId = ContentUris.parseId(uri);
-         return readableDb.query(tableMeta.tableName(), projection, "_id = ?", new String[]{ Long.toString(rowId) }, null, null, sortOrder);
+         return readableDb.query(tableMeta.tableName(), projection, SINGLE_ITEM_WHERE_CLAUSE, new String[]{ Long.toString(rowId) }, null, null, null);
+      } else {
+         Log.i("LOL", "Multiple item uri: " + uri.toString());
+         return readableDb.query(tableMeta.tableName(), projection, selection, selectionArgs, null, null, sortOrder);
       }
    }
 
    @Override
    public String getType(Uri uri) {
-      DatabaseTable matchedTable = getTableForUri(uri);
+      int matcherInfo = getMatcherInfo(uri);
+      DatabaseTable matchedTable = findDatabaseTableForMatcherInfo(matcherInfo);
 
-      int matchResult = mUriMatcher.match(uri);
-      boolean isDirectory = (matchResult & 1) == 0;
+      boolean isSingleItem = MatcherInfo.isSingleItem(matcherInfo);
 
       ContentProviderEndPoint tableMeta = matchedTable.getClass().getAnnotation(ContentProviderEndPoint.class);
       String supportedClass = tableMeta.mappedClass().getCanonicalName();
 
-      if (isDirectory) {
-         return ContentResolver.CURSOR_DIR_BASE_TYPE + "/vnd." + supportedClass;
-      } else {
+      if (isSingleItem) {
          return ContentResolver.CURSOR_ITEM_BASE_TYPE + "/vnd." + supportedClass;
+      } else {
+         return ContentResolver.CURSOR_DIR_BASE_TYPE + "/vnd." + supportedClass;
       }
    }
 
    @Override
    public Uri insert(Uri uri, ContentValues values) {
-      DatabaseTable matchedTable = getTableForUri(uri);
+      values.remove(COLUMN_ID);
+
+      int matcherInfo = getMatcherInfo(uri);
+      DatabaseTable matchedTable = findDatabaseTableForMatcherInfo(matcherInfo);
 
       ContentProviderEndPoint tableMeta = matchedTable.getClass().getAnnotation(ContentProviderEndPoint.class);
 
@@ -114,12 +131,22 @@ public abstract class BaseContentProvider extends ContentProvider {
 
    @Override
    public int delete(Uri uri, String selection, String[] selectionArgs) {
-      DatabaseTable matchedTable = getTableForUri(uri);
+      int matcherInfo = getMatcherInfo(uri);
+      DatabaseTable matchedTable = findDatabaseTableForMatcherInfo(matcherInfo);
+      boolean isSingleItem = MatcherInfo.isSingleItem(matcherInfo);
 
       ContentProviderEndPoint tableMeta = matchedTable.getClass().getAnnotation(ContentProviderEndPoint.class);
 
       SQLiteDatabase writableDb = mDatabaseHelper.getWritableDatabase();
-      int numRowsDeleted = writableDb.delete(tableMeta.tableName(), selection, selectionArgs);
+
+      int numRowsDeleted;
+      if (isSingleItem) {
+         long rowId = ContentUris.parseId(uri);
+         numRowsDeleted = writableDb.delete(tableMeta.tableName(), SINGLE_ITEM_WHERE_CLAUSE, new String[]{ Long.toString(rowId) });
+      } else {
+         numRowsDeleted = writableDb.delete(tableMeta.tableName(), selection, selectionArgs);
+      }
+
       getContext().getContentResolver().notifyChange(uri, null);
 
       return numRowsDeleted;
@@ -127,12 +154,21 @@ public abstract class BaseContentProvider extends ContentProvider {
 
    @Override
    public int update(Uri uri, ContentValues values, String selection, String[] selectionArgs) {
-      DatabaseTable matchedTable = getTableForUri(uri);
+      int matcherInfo = getMatcherInfo(uri);
+      DatabaseTable matchedTable = findDatabaseTableForMatcherInfo(matcherInfo);
+      boolean isSingleItem = MatcherInfo.isSingleItem(matcherInfo);
 
       ContentProviderEndPoint tableMeta = matchedTable.getClass().getAnnotation(ContentProviderEndPoint.class);
-
       SQLiteDatabase writableDb = mDatabaseHelper.getWritableDatabase();
-      int numRowsUpdated = writableDb.update(tableMeta.tableName(), values, selection, selectionArgs);
+
+      values.remove(COLUMN_ID);
+      int numRowsUpdated;
+      if (isSingleItem) {
+         long rowId = ContentUris.parseId(uri);
+         numRowsUpdated = writableDb.update(tableMeta.tableName(), values, SINGLE_ITEM_WHERE_CLAUSE, new String[]{ Long.toString(rowId) });
+      } else {
+         numRowsUpdated = writableDb.update(tableMeta.tableName(), values, selection, selectionArgs);
+      }
 
       getContext().getContentResolver().notifyChange(uri, null);
 
@@ -145,6 +181,18 @@ public abstract class BaseContentProvider extends ContentProvider {
       mDatabaseHelper.close();
    }
 
+   protected void onCreateDatabase(SQLiteDatabase db) {
+      for (DatabaseTable table : mTables) {
+         table.onCreate(db);
+      }
+   }
+
+   protected void onUpgradeDatabase(SQLiteDatabase db, int oldVersion, int newVersion) {
+      for (DatabaseTable table : mTables) {
+         table.onUpgrade(db, oldVersion, newVersion);
+      }
+   }
+
    private class BaseSQLiteOpenHelper extends SQLiteOpenHelper {
 
       public BaseSQLiteOpenHelper(Context context) {
@@ -153,16 +201,36 @@ public abstract class BaseContentProvider extends ContentProvider {
 
       @Override
       public void onCreate(SQLiteDatabase db) {
-         for (DatabaseTable table : mTables) {
-            table.onCreate(db);
-         }
+         onCreateDatabase(db);
       }
 
       @Override
       public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-         for (DatabaseTable table : mTables) {
-            table.onUpgrade(db, oldVersion, newVersion);
-         }
+         onUpgradeDatabase(db, oldVersion, newVersion);
       }
    }
+
+   private static class MatcherInfo {
+      private static final int BITMASK_SINGLE_ITEM = 0x100;
+      private static final int BITMASK_INDEX = 0xFF;
+
+      public static int fromValues(short tableIndex, boolean isSingleItem) {
+         int matcherInfo = tableIndex;
+
+         if (isSingleItem) {
+            matcherInfo = matcherInfo | BITMASK_SINGLE_ITEM;
+         }
+
+         return matcherInfo;
+      }
+
+      public static boolean isSingleItem(int matcherInfo) {
+         return (matcherInfo & BITMASK_SINGLE_ITEM) > 0;
+      }
+
+      public static short getTableIndex(int matcherInfo) {
+         return (short)(matcherInfo & BITMASK_INDEX);
+      }
+   }
+
 }
