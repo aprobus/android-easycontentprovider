@@ -14,7 +14,7 @@ import java.lang.annotation.Target;
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ ElementType.TYPE })
-public @interface ContentProviderEndPoint {
+public @interface ContentProviderTable {
    String tableName();
    Class<?> mappedClass();
 }

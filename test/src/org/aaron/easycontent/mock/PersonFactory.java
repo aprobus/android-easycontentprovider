@@ -2,14 +2,14 @@ package org.aaron.easycontent.mock;
 
 import android.content.ContentValues;
 import android.database.Cursor;
-import org.aaron.easycontent.factory.DatabaseFactory;
+import org.aaron.easycontent.database.RelationalTransformer;
 
 /**
  * User: aprobus
  * Date: 2/17/13
  * Time: 12:31 PM
  */
-public class PersonFactory implements DatabaseFactory<Person> {
+public class PersonFactory implements RelationalTransformer<Person> {
 
    @Override
    public Person fromCursor(Cursor cursor) {

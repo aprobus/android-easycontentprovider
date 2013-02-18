@@ -41,7 +41,7 @@ public abstract class BaseContentProvider extends ContentProvider {
       String authority = mAuthority;
 
       for (int i = 0; i < mTables.length; i += 1) {
-         ContentProviderEndPoint endPoint = mTables[i].getClass().getAnnotation(ContentProviderEndPoint.class);
+         ContentProviderTable endPoint = mTables[i].getClass().getAnnotation(ContentProviderTable.class);
          mUriMatcher.addURI(authority, endPoint.tableName(), i * 2);
          mUriMatcher.addURI(authority, endPoint.tableName() + "/#", i * 2 + 1);
       }
@@ -80,7 +80,7 @@ public abstract class BaseContentProvider extends ContentProvider {
       DatabaseTable matchedTable = findDatabaseTableForMatcherInfo(matcherInfo);
       boolean isSingleItem = MatcherInfo.isSingleItem(matcherInfo);
 
-      ContentProviderEndPoint tableMeta = matchedTable.getClass().getAnnotation(ContentProviderEndPoint.class);
+      ContentProviderTable tableMeta = matchedTable.getClass().getAnnotation(ContentProviderTable.class);
       SQLiteDatabase readableDb = mDatabaseHelper.getReadableDatabase();
 
       if (isSingleItem) {
@@ -100,7 +100,7 @@ public abstract class BaseContentProvider extends ContentProvider {
 
       boolean isSingleItem = MatcherInfo.isSingleItem(matcherInfo);
 
-      ContentProviderEndPoint tableMeta = matchedTable.getClass().getAnnotation(ContentProviderEndPoint.class);
+      ContentProviderTable tableMeta = matchedTable.getClass().getAnnotation(ContentProviderTable.class);
       String supportedClass = tableMeta.mappedClass().getCanonicalName();
 
       if (isSingleItem) {
@@ -117,7 +117,7 @@ public abstract class BaseContentProvider extends ContentProvider {
       int matcherInfo = getMatcherInfo(uri);
       DatabaseTable matchedTable = findDatabaseTableForMatcherInfo(matcherInfo);
 
-      ContentProviderEndPoint tableMeta = matchedTable.getClass().getAnnotation(ContentProviderEndPoint.class);
+      ContentProviderTable tableMeta = matchedTable.getClass().getAnnotation(ContentProviderTable.class);
 
       SQLiteDatabase writableDb = mDatabaseHelper.getWritableDatabase();
       long rowId = writableDb.insert(tableMeta.tableName(), null, values);
@@ -135,7 +135,7 @@ public abstract class BaseContentProvider extends ContentProvider {
       DatabaseTable matchedTable = findDatabaseTableForMatcherInfo(matcherInfo);
       boolean isSingleItem = MatcherInfo.isSingleItem(matcherInfo);
 
-      ContentProviderEndPoint tableMeta = matchedTable.getClass().getAnnotation(ContentProviderEndPoint.class);
+      ContentProviderTable tableMeta = matchedTable.getClass().getAnnotation(ContentProviderTable.class);
 
       SQLiteDatabase writableDb = mDatabaseHelper.getWritableDatabase();
 
@@ -158,7 +158,7 @@ public abstract class BaseContentProvider extends ContentProvider {
       DatabaseTable matchedTable = findDatabaseTableForMatcherInfo(matcherInfo);
       boolean isSingleItem = MatcherInfo.isSingleItem(matcherInfo);
 
-      ContentProviderEndPoint tableMeta = matchedTable.getClass().getAnnotation(ContentProviderEndPoint.class);
+      ContentProviderTable tableMeta = matchedTable.getClass().getAnnotation(ContentProviderTable.class);
       SQLiteDatabase writableDb = mDatabaseHelper.getWritableDatabase();
 
       values.remove(COLUMN_ID);

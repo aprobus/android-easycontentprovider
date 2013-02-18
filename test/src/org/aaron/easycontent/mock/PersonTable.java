@@ -2,14 +2,14 @@ package org.aaron.easycontent.mock;
 
 import android.database.sqlite.SQLiteDatabase;
 import org.aaron.easycontent.database.DatabaseTable;
-import org.aaron.easycontent.provider.ContentProviderEndPoint;
+import org.aaron.easycontent.provider.ContentProviderTable;
 
 /**
  * User: aprobus
  * Date: 2/17/13
  * Time: 12:29 PM
  */
-@ContentProviderEndPoint(tableName = PersonTable.TABLE_NAME, mappedClass = Person.class)
+@ContentProviderTable(tableName = PersonTable.TABLE_NAME, mappedClass = Person.class)
 public class PersonTable implements DatabaseTable {
 
    public static final String TABLE_NAME = "persons";
