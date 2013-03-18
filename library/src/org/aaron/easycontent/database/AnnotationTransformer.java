@@ -2,7 +2,6 @@ package org.aaron.easycontent.database;
 
 import android.content.ContentValues;
 import android.database.Cursor;
-import android.util.Log;
 import junit.framework.Assert;
 
 import java.lang.reflect.Constructor;
@@ -16,7 +15,7 @@ import java.util.Map;
  * Date: 2/18/13
  * Time: 3:54 PM
  */
-public class AnnotationTransformer<T> implements RelationalTransformer<T> {
+public class AnnotationTransformer<T> implements RowTransformer<T> {
 
    private Class<T> mAnnotatedClass;
    private Map<Class<? extends ValueTransformer>, ValueTransformer> mTransformers;

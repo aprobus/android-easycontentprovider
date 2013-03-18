@@ -8,7 +8,7 @@ import android.database.Cursor;
  * Date: 2/16/13
  * Time: 12:08 PM
  */
-public interface RelationalTransformer<T> {
+public interface RowTransformer<T> {
    public T fromCursor(Cursor cursor);
    public ContentValues toContentValues(T obj);
 }
