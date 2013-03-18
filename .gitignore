@@ -1,7 +1,6 @@
-.idea
 gen
-*.iml
 out
 *.properties
 res
+.idea
 
