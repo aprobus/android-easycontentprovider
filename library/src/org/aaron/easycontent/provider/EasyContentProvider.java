@@ -83,14 +83,17 @@ public abstract class EasyContentProvider extends ContentProvider {
       ContentProviderTable tableMeta = matchedTable.getClass().getAnnotation(ContentProviderTable.class);
       SQLiteDatabase readableDb = mDatabaseHelper.getReadableDatabase();
 
+      Cursor queryCursor = null;
       if (isSingleItem) {
-         Log.i("LOL", "Single item uri: " + uri.toString());
          long rowId = ContentUris.parseId(uri);
-         return readableDb.query(tableMeta.tableName(), projection, SINGLE_ITEM_WHERE_CLAUSE, new String[]{ Long.toString(rowId) }, null, null, null);
+         queryCursor = readableDb.query(tableMeta.tableName(), projection, SINGLE_ITEM_WHERE_CLAUSE, new String[]{ Long.toString(rowId) }, null, null, null);
       } else {
-         Log.i("LOL", "Multiple item uri: " + uri.toString());
-         return readableDb.query(tableMeta.tableName(), projection, selection, selectionArgs, null, null, sortOrder);
+         queryCursor = readableDb.query(tableMeta.tableName(), projection, selection, selectionArgs, null, null, sortOrder);
       }
+
+      queryCursor.setNotificationUri(getContext().getContentResolver(), uri);
+
+      return queryCursor;
    }
 
    @Override
@@ -124,7 +127,7 @@ public abstract class EasyContentProvider extends ContentProvider {
 
       Uri rowUri = ContentUris.withAppendedId(uri, rowId);
 
-      getContext().getContentResolver().notifyChange(uri, null);
+      getContext().getContentResolver().notifyChange(rowUri, null);
 
       return rowUri;
    }
